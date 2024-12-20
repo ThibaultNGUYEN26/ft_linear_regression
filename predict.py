@@ -20,7 +20,7 @@ def main():
         try:
             mileage = float(mileage_input)
             price_estimate = estimate_price(mileage, theta0, theta1)
-            print(f"Estimated price for mileage {mileage} km: {price_estimate:.2f}")
+            print(f"Estimated price for a mileage of {mileage} km: {price_estimate:.2f}$")
         except ValueError:
             print("Please enter a valid number for mileage.")
 
