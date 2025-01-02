@@ -28,7 +28,16 @@ def cost(X, y, theta):
 
 def gradient(X, y, theta):
     m = len(y)
-    return (1 / m) * X.T.dot(model(X, theta) - y)
+    error = model(X, theta) - y
+
+    # Gradient for theta_0 (intercept)
+    grad_theta0 = (1 / m) * np.sum(error)
+
+    # Gradient for theta_1 (slope)
+    grad_theta1 = (1 / m) * np.sum(error * X[:, 0].reshape(-1, 1))
+
+    # Return gradients into a single array
+    return np.array([[grad_theta1], [grad_theta0]])
 
 
 def gradient_descent(X, y, theta, learning_rate, n_iterations):
@@ -36,13 +45,14 @@ def gradient_descent(X, y, theta, learning_rate, n_iterations):
     for i in range(n_iterations):
         # Update theta
         theta = theta - learning_rate * gradient(X, y, theta)
-
         # Store the cost
         cost_history[i] = cost(X, y, theta)
 
     return theta, cost_history
 
-
+"""
+R squared measures the proportion of variance in the target variable that is explained by the model.
+"""
 def coef_determination(y, pred):
     u = ((y - pred)**2).sum()
     v = ((y - y.mean())**2).sum()
@@ -58,7 +68,7 @@ def mean_squared_error(y_actual, y_predicted):
 
 
 """
-Mean Squared Error represents the average of the squared difference between the original and predicted values in the data set.
+Mean Squared Error represents the average absolute of the squared difference between the original and predicted values in the data set.
 """
 def mean_absolute_error(y_actual, y_predicted):
     """ Calculate the Mean Absolute Error """
@@ -77,7 +87,7 @@ def root_mean_squared_error(y_actual, y_predicted):
 def main():
     parser = argparse.ArgumentParser(description="Apply a Linear Regression to a Dataset.")
     parser.add_argument("-v", "--visualizer", action="store_true", help="Plotting the results of the Linear Regression")
-    parser.add_argument("-c", "--compare", action="store_true", help="Compare the results of the Linear Regression with polyfit")
+    parser.add_argument("-c", "--compare", action="store_true", help="Compare the results of the Linear Regression with Polyfit")
     parser.add_argument("-s", "--steps", action="store_true", help="Plotting the steps of the Linear Regression")
 
     args = parser.parse_args()
@@ -103,7 +113,9 @@ def main():
     print("Initial Cost:", cost(X, y, theta))
 
     # Step 6: Gradient Descent
-    final_theta, cost_history = gradient_descent(X, y, theta, learning_rate=0.01, n_iterations=500)
+    n = 500
+    rate = 0.01
+    final_theta, cost_history = gradient_descent(X, y, theta, learning_rate=rate, n_iterations=n)
     # print("Final Theta (Manual Gradient Descent):\n", final_theta)
 
     # Step 7: Compute Final Cost
@@ -111,10 +123,7 @@ def main():
     print(f"Final Cost: {final_cost:.2f}")
 
     # Denormalize Manual Results
-    mean_x = np.mean(x)  # Mean of original x
-    std_x = np.std(x)    # Standard deviation of original x
-    slope_manual = final_theta[0, 0] / std_x
-    intercept_manual = final_theta[1, 0] - (slope_manual * mean_x)
+    slope_manual, intercept_manual = denormalize_theta(final_theta, mean_x=np.mean(x), std_x=np.std(x))
 
     print(f"Theta (Manual Gradient Descent): Intercept (theta0) = {intercept_manual}, Slope (theta1) = {slope_manual}")
 
@@ -122,6 +131,20 @@ def main():
     predictions_manual = model(X, final_theta)
 
     if args.visualizer:
+        # Step 11: Error Comparison
+        mse_manual = mean_squared_error(y, predictions_manual)
+        print(f"Mean Squared Error: {mse_manual:.2f}")
+
+        mse_manual = mean_absolute_error(y, predictions_manual)
+        print(f"Mean Absolute Error: {mse_manual:.2f}")
+
+        rmse_manual = root_mean_squared_error(y, predictions_manual)
+        print(f"Root Mean Squared Error: {rmse_manual:.2f}")
+
+        # Step 12: Coefficient of Determination
+        r2_manual = coef_determination(y, predictions_manual) * 100
+        print(f"Coefficient of Determination: {r2_manual:.2f}%")
+
         # Plot 1: Manual Gradient Descent Regression
         # Left Subplot: Manual Gradient Descent Regression
         plt.scatter(x, y, color='blue', label='Data')
@@ -135,20 +158,22 @@ def main():
         plt.tight_layout()
         plt.show()
 
+    elif args.steps:
+
         # Step 11: Error Comparison
         mse_manual = mean_squared_error(y, predictions_manual)
-        print(f"Mean Squared Error (Manual Gradient Descent): {mse_manual:.2f}")
+        print(f"Mean Squared Error: {mse_manual:.2f}")
 
         mse_manual = mean_absolute_error(y, predictions_manual)
-        print(f"Mean Absolute Error (Manual Gradient Descent): {mse_manual:.2f}")
+        print(f"Mean Absolute Error: {mse_manual:.2f}")
 
         rmse_manual = root_mean_squared_error(y, predictions_manual)
-        print(f"Root Mean Squared Error (Manual Gradient Descent): {rmse_manual:.2f}")
+        print(f"Root Mean Squared Error: {rmse_manual:.2f}")
 
         # Step 12: Coefficient of Determination
         r2_manual = coef_determination(y, predictions_manual) * 100
-        print(f"Coefficient of Determination (Manual): {r2_manual:.2f}%")
-    elif args.steps:
+        print(f"Coefficient of Determination: {r2_manual:.2f}%")
+
         # Step 1: Set up a figure with 4 subplots
         fig, axs = plt.subplots(2, 2, figsize=(12, 10))  # 2x2 grid of subplots
 
@@ -177,8 +202,8 @@ def main():
         # Perform Gradient Descent and Collect Intermediate Results
         cost_history = []
         intermediate_lines = []  # Store intermediate predictions for plotting
-        for i in range(500):  # Number of iterations
-            theta = theta - 0.01 * gradient(X, y, theta)  # Learning rate = 0.01
+        for i in range(n):  # Number of iterations
+            theta = theta - rate * gradient(X, y, theta)  # Learning rate = 0.01
             cost_history.append(cost(X, y, theta))
 
             # Store predictions every 100 iterations
@@ -208,26 +233,66 @@ def main():
         plt.show()
 
         # Step 2: Plot Cost Over Iterations in a Separate Figure
-        plt.figure(figsize=(10, 6))
-        plt.plot(range(len(cost_history)), cost_history, color='blue')
-        plt.xlabel('Iterations')
-        plt.ylabel('Cost')
-        plt.title('Cost Function Over Iterations')
+        # Initialize parameters and storage for theta history
+        theta = np.zeros((2, 1))
+        theta_history = []
+        denormalized_theta_history = []
+        cost_history = []
+
+        # Compute the mean and standard deviation of the original feature
+        mean_x = np.mean(x)
+        std_x = np.std(x)
+
+        # Perform gradient descent and store theta, cost, and denormalized theta at each iteration
+        for i in range(n):  # Number of iterations
+            grad = gradient(X, y, theta)
+            theta = theta - rate * grad  # Learning rate
+            theta_history.append(theta.copy())  # Store a copy of normalized theta
+            cost_history.append(cost(X, y, theta))  # Store the cost
+
+            # Denormalize the parameters
+            slope_denormalized = theta[0, 0] / std_x
+            intercept_denormalized = theta[1, 0] - (slope_denormalized * mean_x)
+            denormalized_theta_history.append([slope_denormalized, intercept_denormalized])
+
+        # Convert histories to NumPy arrays for easy indexing
+        theta_history = np.array(theta_history).squeeze()
+        denormalized_theta_history = np.array(denormalized_theta_history)
+
+        # Create subplots
+        fig = plt.figure(figsize=(12, 12))
+
+        # Subplot 1: Cost Function Over Iterations (Top Center)
+        ax1 = plt.subplot2grid((2, 2), (0, 0), colspan=2)  # Spans both columns
+        ax1.plot(range(len(cost_history)), cost_history, color='blue')
+        ax1.set_title('Cost Function Over Iterations', fontsize=14)
+        ax1.set_xlabel('Iterations')
+        ax1.set_ylabel('Cost')
+        ax1.grid(True)
+
+        # Subplot 2: Evolution of Normalized Parameters (Bottom Left)
+        ax2 = plt.subplot2grid((2, 2), (1, 0))  # Bottom left
+        ax2.plot(range(len(theta_history)), theta_history[:, 0], label=r'$\theta_1$ (Slope)', color='red')
+        ax2.plot(range(len(theta_history)), theta_history[:, 1], label=r'$\theta_0$ (Intercept)', color='green')
+        ax2.set_title('Evolution of Normalized Parameters ($\\theta_0$ and $\\theta_1$)', fontsize=12)
+        ax2.set_xlabel('Iterations')
+        ax2.set_ylabel('Parameter Value')
+        ax2.legend()
+        ax2.grid(True)
+
+        # Subplot 3: Evolution of Denormalized Parameters (Bottom Right)
+        ax3 = plt.subplot2grid((2, 2), (1, 1))  # Bottom right
+        ax3.plot(range(len(denormalized_theta_history)), denormalized_theta_history[:, 0], label=r'$\theta_1$ (Slope)', color='red')
+        ax3.plot(range(len(denormalized_theta_history)), denormalized_theta_history[:, 1], label=r'$\theta_0$ (Intercept)', color='green')
+        ax3.set_title('Evolution of Denormalized Parameters ($\\theta_0$ and $\\theta_1$)', fontsize=12)
+        ax3.set_xlabel('Iterations')
+        ax3.set_ylabel('Parameter Value')
+        ax3.legend()
+        ax3.grid(True)
+
+        # Adjust layout
+        plt.tight_layout(h_pad=2)  # Add padding between rows
         plt.show()
-
-        # Step 11: Error Comparison
-        mse_manual = mean_squared_error(y, predictions_manual)
-        print(f"Mean Squared Error (Manual Gradient Descent): {mse_manual:.2f}")
-
-        mse_manual = mean_absolute_error(y, predictions_manual)
-        print(f"Mean Absolute Error (Manual Gradient Descent): {mse_manual:.2f}")
-
-        rmse_manual = root_mean_squared_error(y, predictions_manual)
-        print(f"Root Mean Squared Error (Manual Gradient Descent): {rmse_manual:.2f}")
-
-        # Step 12: Coefficient of Determination
-        r2_manual = coef_determination(y, predictions_manual) * 100
-        print(f"Coefficient of Determination (Manual): {r2_manual:.2f}%")
 
     elif args.compare:
         # Step 9: Compare with Numpy Polyfit
@@ -268,42 +333,43 @@ def main():
         mse_manual = mean_squared_error(y, predictions_manual)
         mse_polyfit = mean_squared_error(y, predictions_polyfit)
         print(f"Mean Squared Error (Manual Gradient Descent): {mse_manual:.2f}")
-        print(f"Mean Squared Error (Polyfit): {mse_polyfit:.2f}")
+        print(f"Mean Squared Error (Polyfit Gradient Descent): {mse_polyfit:.2f}")
 
         mse_manual = mean_absolute_error(y, predictions_manual)
         mse_polyfit = mean_absolute_error(y, predictions_polyfit)
         print(f"Mean Absolute Error (Manual Gradient Descent): {mse_manual:.2f}")
-        print(f"Mean Absolute Error (Polyfit): {mse_polyfit:.2f}")
+        print(f"Mean Absolute Error (Polyfit Gradient Descent): {mse_polyfit:.2f}")
 
         rmse_manual = root_mean_squared_error(y, predictions_manual)
         rmse_polyfit = root_mean_squared_error(y, predictions_polyfit)
         print(f"Root Mean Squared Error (Manual Gradient Descent): {rmse_manual:.2f}")
-        print(f"Root Mean Squared Error (Polyfit): {rmse_polyfit:.2f}")
+        print(f"Root Mean Squared Error (Polyfit Gradient Descent): {rmse_polyfit:.2f}")
 
         # Step 12: Coefficient of Determination
         r2_manual = coef_determination(y, predictions_manual) * 100
         r2_polyfit = coef_determination(y, predictions_polyfit) * 100
-        print(f"Coefficient of Determination (Manual): {r2_manual:.2f}%")
-        print(f"Coefficient of Determination (Polyfit): {r2_polyfit:.2f}%")
+        print(f"Coefficient of Determination (Manual Gradient Descent): {r2_manual:.2f}%")
+        print(f"Coefficient of Determination (Polyfit Gradient Descent): {r2_polyfit:.2f}%")
+
     else:
         # Step 11: Error Comparison
         mse_manual = mean_squared_error(y, predictions_manual)
-        print(f"Mean Squared Error (Manual Gradient Descent): {mse_manual:.2f}")
+        print(f"Mean Squared Error: {mse_manual:.2f}")
 
         mse_manual = mean_absolute_error(y, predictions_manual)
-        print(f"Mean Absolute Error (Manual Gradient Descent): {mse_manual:.2f}")
+        print(f"Mean Absolute Error: {mse_manual:.2f}")
 
         rmse_manual = root_mean_squared_error(y, predictions_manual)
-        print(f"Root Mean Squared Error (Manual Gradient Descent): {rmse_manual:.2f}")
+        print(f"Root Mean Squared Error: {rmse_manual:.2f}")
 
         # Step 12: Coefficient of Determination
         r2_manual = coef_determination(y, predictions_manual) * 100
-        print(f"Coefficient of Determination (Manual): {r2_manual:.2f}%")
+        print(f"Coefficient of Determination: {r2_manual:.2f}%")
 
     # Step 13: Save the Denormalized Model Parameters
-        with open("model.txt", "w") as file:
-            file.write(f"{intercept_manual},{slope_manual}")
-        print("Denormalized model parameters saved to 'model.txt'.")
+    with open("model.txt", "w") as file:
+        file.write(f"{intercept_manual},{slope_manual}")
+    print("Denormalized model parameters (theta) saved to 'model.txt'.")
 
 if __name__ == "__main__":
     main()
