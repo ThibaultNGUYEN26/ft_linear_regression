@@ -303,6 +303,28 @@ def main():
         # Generate predictions using polyfit coefficients
         predictions_polyfit = theta_polyfit[0] * x + theta_polyfit[1]
 
+        # Step 11: Error Comparison
+        mse_manual = mean_squared_error(y, predictions_manual)
+        mse_polyfit = mean_squared_error(y, predictions_polyfit)
+        print(f"Mean Squared Error (Manual Gradient Descent): {mse_manual:.2f}")
+        print(f"Mean Squared Error (Polyfit Gradient Descent): {mse_polyfit:.2f}")
+
+        mse_manual = mean_absolute_error(y, predictions_manual)
+        mse_polyfit = mean_absolute_error(y, predictions_polyfit)
+        print(f"Mean Absolute Error (Manual Gradient Descent): {mse_manual:.2f}")
+        print(f"Mean Absolute Error (Polyfit Gradient Descent): {mse_polyfit:.2f}")
+
+        rmse_manual = root_mean_squared_error(y, predictions_manual)
+        rmse_polyfit = root_mean_squared_error(y, predictions_polyfit)
+        print(f"Root Mean Squared Error (Manual Gradient Descent): {rmse_manual:.2f}")
+        print(f"Root Mean Squared Error (Polyfit Gradient Descent): {rmse_polyfit:.2f}")
+
+        # Step 12: Coefficient of Determination
+        r2_manual = coef_determination(y, predictions_manual) * 100
+        r2_polyfit = coef_determination(y, predictions_polyfit) * 100
+        print(f"Coefficient of Determination (Manual Gradient Descent): {r2_manual:.2f}%")
+        print(f"Coefficient of Determination (Polyfit Gradient Descent): {r2_polyfit:.2f}%")
+
         # Step 10: Plot Results Separately
 
         # Plot 1: Manual Gradient Descent Regression
@@ -328,28 +350,6 @@ def main():
         # Adjust layout and display the plot
         plt.tight_layout()
         plt.show()
-
-        # Step 11: Error Comparison
-        mse_manual = mean_squared_error(y, predictions_manual)
-        mse_polyfit = mean_squared_error(y, predictions_polyfit)
-        print(f"Mean Squared Error (Manual Gradient Descent): {mse_manual:.2f}")
-        print(f"Mean Squared Error (Polyfit Gradient Descent): {mse_polyfit:.2f}")
-
-        mse_manual = mean_absolute_error(y, predictions_manual)
-        mse_polyfit = mean_absolute_error(y, predictions_polyfit)
-        print(f"Mean Absolute Error (Manual Gradient Descent): {mse_manual:.2f}")
-        print(f"Mean Absolute Error (Polyfit Gradient Descent): {mse_polyfit:.2f}")
-
-        rmse_manual = root_mean_squared_error(y, predictions_manual)
-        rmse_polyfit = root_mean_squared_error(y, predictions_polyfit)
-        print(f"Root Mean Squared Error (Manual Gradient Descent): {rmse_manual:.2f}")
-        print(f"Root Mean Squared Error (Polyfit Gradient Descent): {rmse_polyfit:.2f}")
-
-        # Step 12: Coefficient of Determination
-        r2_manual = coef_determination(y, predictions_manual) * 100
-        r2_polyfit = coef_determination(y, predictions_polyfit) * 100
-        print(f"Coefficient of Determination (Manual Gradient Descent): {r2_manual:.2f}%")
-        print(f"Coefficient of Determination (Polyfit Gradient Descent): {r2_polyfit:.2f}%")
 
     else:
         # Step 11: Error Comparison
